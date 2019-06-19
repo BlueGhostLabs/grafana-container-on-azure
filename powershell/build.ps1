@@ -33,10 +33,10 @@ $AccountKeyParams = @{
     Name = $storageAccountName
 }
 
-$storageAccountKey = (Get-AzStorageAccountKey @AccountKeyParams).Key1
+$storageAccountKey = (Get-AzStorageAccountKey @AccountKeyParams).Value[0]
 
 # Create Grafana Container
-$storageContext = New-AzStorageContext -StorageAccountName $storageAccountName
+$storageContext = New-AzStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageAccountKey
 New-AzStorageContainer -Name grafana -Context $storageContext
 
 # Create App Service Plan
@@ -50,14 +50,13 @@ $AppPlanParams = @{
     Sku = @{name="B1";tier="Basic"; size="B1"; family="B"; capacity="1"}
 }
 
-New-AzResource @AppPlanParams
+New-AzResource @AppPlanParams -Force
 
 # Create App Service
 $AppServiceParams = @{
     ResourceGroupName = $resourceGroupName
     Name = $appServiceName
     AppServicePlan = $appPlanName
-    ContainerImageName = "grafana/grafana"
 }
 
 $webApp = New-AzWebApp @AppServiceParams
@@ -67,7 +66,7 @@ $StoragePathParams = @{
     Name = "GrafanaData"
     AccountName = $storageAccountName
     Type = "AzureBlob"
-    ShareName = "GrafanaData"
+    ShareName = "grafana"
     AccessKey = $storageAccountKey
     MountPath = "/var/lib/grafana/"
 }
@@ -88,11 +87,12 @@ $adApp = New-AzADApplication @AdAppParams
 # Configuring the settings that will become environment variables
 $settings = @{
     GF_SERVER_ROOT_URL = "https://$($webApp.DefaultHostName)"
-    GF_SECURITY_ADMIN_PASSWORD = $grafanaPassword
+    GF_SECURITY_ADMIN_PASSWORD = "$($grafanaPassword)"
     GF_INSTALL_PLUGINS = "grafana-clock-panel,grafana-simple-json-datasource,grafana-azure-monitor-datasource"
+    GF_AUTH_GENERIC_OAUTH_NAME = "Azure AD"
     GF_AUTH_GENERIC_OAUTH_ENABLED = "true"
-    GF_AUTH_GENERIC_OAUTH_CLIENT_ID = $adApp.Id
-    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=$CLIENT_SECRET
+    GF_AUTH_GENERIC_OAUTH_CLIENT_ID = "$($adApp.Id)"
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET = "$($clientSecret)"
     GF_AUTH_GENERIC_OAUTH_SCOPES = "openid email name"
     GF_AUTH_GENERIC_OAUTH_AUTH_URL = "https://login.microsoftonline.com/$tenantId/oauth2/authorize"
     GF_AUTH_GENERIC_OAUTH_TOKEN_URL= "https://login.microsoftonline.com/$tenantId/oauth2/token"
@@ -106,6 +106,7 @@ $AppConfig = @{
     Name = $appServiceName
     AppSettings = $settings
     AzureStoragePath = $storagePath
+    ContainerImageName = "grafana/grafana"
 }
 
 Set-AzWebApp @AppConfig
@@ -113,4 +114,4 @@ Set-AzWebApp @AppConfig
 # Printing out information you will need to know
 Write-Host Grafana password is: $grafanaPassword
 Write-Host Grafana address is: https://$($webApp.DefaultHostName)
-Write-Host Client Scecret is: $CLIENT_SECRET
+Write-Host Client Scecret is: $clientSecret
