@@ -215,3 +215,9 @@ FakesAssemblies/
 **/*.Server/GeneratedArtifacts
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
+
+
+# Terraform
+.terraform
+tf_log.txt
+terraform
