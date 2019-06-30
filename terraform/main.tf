@@ -10,7 +10,6 @@ provider "random" {
   version = "~>2.1"
 }
 
-
 locals {
   region_codes = {
     "East US" = "eus"
@@ -29,9 +28,9 @@ resource "random_string" "grafana_password" {
 
 resource "azuread_application" "main" {
   name            = "Grafana"
-  homepage        = "https://${local.app_service_name}"
+  homepage        = "https://${local.app_service_name}.azurewebsites.net"
   identifier_uris = ["https://Grafana"]
-  reply_urls      = ["https://${local.app_service_name}/login/generic_oauth"]
+  reply_urls      = ["https://${local.app_service_name}.azurewebsites.net/login/generic_oauth"]
 }
 
 resource "azuread_application_password" "main" {
@@ -54,7 +53,7 @@ resource "azurerm_storage_account" "main" {
 }
 
 resource "azurerm_storage_container" "main" {
-  name                  = "${var.app_name}${lookup(local.region_codes, var.location)}st"
+  name                  = "${var.app_name}"
   resource_group_name   = "${azurerm_resource_group.main.name}"
   storage_account_name  = "${azurerm_storage_account.main.name}"
   container_access_type = "private"
@@ -87,6 +86,7 @@ resource "azurerm_app_service" "main" {
     "GF_SERVER_ROOT_URL"                          = "https://${local.app_service_name}.azurewebsites.net"
     "GF_SECURITY_ADMIN_PASSWORD"                  = "${random_string.grafana_password.result}"
     "GF_INSTALL_PLUGINS"                          = "grafana-clock-panel,grafana-simple-json-datasource,grafana-azure-monitor-datasource"
+    "GF_AUTH_GENERIC_OAUTH_NAME"                  = "Azure AD"
     "GF_AUTH_GENERIC_OAUTH_ENABLED"               = "true"
     "GF_AUTH_GENERIC_OAUTH_CLIENT_ID"             = "${azuread_application.main.id}"
     "GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET"         = "${random_uuid.client_secret.result}"
@@ -99,10 +99,10 @@ resource "azurerm_app_service" "main" {
   }
 
   provisioner "local-exec" {
-    command = "az webapp config storage-account add --resource-group ${azurerm_resource_group.main.name} --name ${azurerm_app_service.main.name} --custom-id GrafanaData --storage-type AzureBlob --share-name grafana --account-name ${azurerm_storage_account.main.name} --access-key ${azurerm_storage_account.main.primary_access_key} --mount-path /var/lib/grafana/"
+    command = "az webapp config storage-account add --resource-group ${azurerm_resource_group.main.name} --name ${azurerm_app_service.main.name} --custom-id GrafanaData --storage-type AzureBlob --share-name ${var.app_name} --account-name ${azurerm_storage_account.main.name} --access-key ${azurerm_storage_account.main.primary_access_key} --mount-path /var/lib/grafana/"
   }
 
   depends_on = [
-    "azurerm_storage_container.main",
+    "azurerm_storage_container.main"
   ]
 }
