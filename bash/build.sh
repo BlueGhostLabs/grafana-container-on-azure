@@ -109,4 +109,4 @@ az webapp config appsettings set \
 # Printing out information you will need to know
 echo Grafana password is: $gf_password
 echo Grafana address is: https://$hostname
-echo Client Scecret is: $client_secret
+echo Client Secret is: $client_secret
