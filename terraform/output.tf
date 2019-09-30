@@ -1,5 +1,5 @@
 output "grafana_password" {
-  value = "${random_string.grafana_password.result}"
+  value = random_string.grafana_password.result
 }
 
 output "grafana_address" {
@@ -7,5 +7,5 @@ output "grafana_address" {
 }
 
 output "client_secret" {
-  value = "${random_uuid.client_secret.result}"
+  value = random_uuid.client_secret.result
 }
