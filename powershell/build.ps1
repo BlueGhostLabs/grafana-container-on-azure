@@ -19,11 +19,13 @@ New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 # Create Storage Account
 $StorageAccountParams = @{
-    ResourceGroupName = $resourceGroupName
-    Name              = $storageAccountName
-    Location          = $location
-    SkuName           = "Standard_LRS"
-} 
+    ResourceGroupName      = $resourceGroupName
+    Name                   = $storageAccountName
+    Location               = $location
+    SkuName                = "Standard_LRS"
+    kind                   = 'StorageV2'
+    EnableHTTPSTrafficOnly = $true
+}
 
 New-AzStorageAccount @StorageAccountParams
 
@@ -93,7 +95,7 @@ $settings = @{
     GF_AUTH_GENERIC_OAUTH_ENABLED               = "true"
     GF_AUTH_GENERIC_OAUTH_CLIENT_ID             = "$($adApp.Id)"
     GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET         = "$($clientSecret)"
-    GF_AUTH_GENERIC_OAUTH_SCOPES                = "openid email name"
+    GF_AUTH_GENERIC_OAUTH_SCOPES                = "openid"
     GF_AUTH_GENERIC_OAUTH_AUTH_URL              = "https://login.microsoftonline.com/$tenantId/oauth2/authorize"
     GF_AUTH_GENERIC_OAUTH_TOKEN_URL             = "https://login.microsoftonline.com/$tenantId/oauth2/token"
     GF_AUTH_GENERIC_OAUTH_API_URL               = ""

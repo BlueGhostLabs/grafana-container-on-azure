@@ -25,6 +25,8 @@ az storage account create \
     --resource-group $resource_group_name \
     --location $location \
     --sku Standard_LRS \
+    --kind StorageV2 \
+    --https-only true \
     --output none
 
 # Get Storage Account Key
@@ -37,7 +39,7 @@ storage_account_key=$(az storage account keys list \
 # Create Grafana Container
 az storage container create \
     --name grafana \
-    --account-name $storage_account_name 
+    --account-name $storage_account_name
 
 # Create App Service Plan
 az appservice plan create \
@@ -98,7 +100,7 @@ az webapp config appsettings set \
     GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true \
     GF_AUTH_GENERIC_OAUTH_CLIENT_ID=$application_id \
     GF_AUTH_GENERIC_OAUTH_client_secret=$client_secret \
-    GF_AUTH_GENERIC_OAUTH_SCOPES="openid email name" \
+    GF_AUTH_GENERIC_OAUTH_SCOPES="openid" \
     GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://login.microsoftonline.com/$tenant_id/oauth2/authorize \
     GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://login.microsoftonline.com/$tenant_id/oauth2/token \
     GF_AUTH_GENERIC_OAUTH_API_URL="" \
