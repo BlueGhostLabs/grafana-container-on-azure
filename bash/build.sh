@@ -73,7 +73,7 @@ az webapp config storage-account add \
 hostname=$(az webapp show \
     --name $app_service_name \
     --resource-group $resource_group_name \
-    --query 'defaulthostname' \
+    --query 'defaultHostName' \
     --output tsv)
 
 client_secret=$(uuidgen)
