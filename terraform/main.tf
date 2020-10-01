@@ -1,14 +1,30 @@
+terraform {
+  required_version = ">=0.13.2"
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "2.27.0"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "1.0.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "2.3.0"
+    }
+  }
+}
+
 provider "azurerm" {
-  version = "=1.34.0"
-  skip_provider_registration = true
+  features {}
 }
 
-provider "azuread" {
-  version = "0.6.0"
-}
-
-provider "random" {
-  version = "2.2.1"
+# Create random code to tack on to names.
+resource "random_string" "random_code" {
+  length  = 4
+  upper   = false
+  special = false
 }
 
 locals {
@@ -16,7 +32,8 @@ locals {
     "East US" = "eus"
   }
 
-  app_service_name = "${var.app_name}-${lookup(local.region_codes, var.location)}-as"
+  end_date         = "2022-01-01T01:02:03Z"
+  app_service_name = "${var.app_name}${random_string.random_code.result}-${lookup(local.region_codes, var.location)}-as"
 }
 
 # Create Client Secret
@@ -30,23 +47,6 @@ resource "random_string" "grafana_password" {
 resource "azurerm_resource_group" "main" {
   name     = "${var.app_name}-${lookup(local.region_codes, var.location)}-rg"
   location = var.location
-}
-
-resource "azurerm_storage_account" "main" {
-  name                     = "${var.app_name}${lookup(local.region_codes, var.location)}st"
-  resource_group_name      = azurerm_resource_group.main.name
-  location                 = azurerm_resource_group.main.location
-  account_tier             = "Standard"
-  account_kind             = "StorageV2"
-  account_replication_type = "LRS"
-  enable_blob_encryption    = true
-  enable_https_traffic_only = true
-}
-
-resource "azurerm_storage_container" "main" {
-  name                  = var.app_name
-  storage_account_name  = azurerm_storage_account.main.name
-  container_access_type = "private"
 }
 
 resource "azurerm_app_service_plan" "main" {
@@ -71,28 +71,19 @@ resource "azuread_application" "main" {
 
 resource "azuread_application_password" "main" {
   application_object_id = azuread_application.main.id
-  value          = random_uuid.client_secret.result
-  end_date       = "2020-01-01T01:02:03Z"
+  value                 = random_uuid.client_secret.result
+  end_date              = local.end_date
 }
 
 resource "azurerm_app_service" "main" {
-  name                = "${local.app_service_name}"
+  name                = local.app_service_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   app_service_plan_id = azurerm_app_service_plan.main.id
-  https_only = true
+  https_only          = true
 
   site_config {
     linux_fx_version = "DOCKER|grafana/grafana"
-  }
-
-  storage_account {
-      name = var.app_name
-      type = "AzureBlob"
-      account_name = azurerm_storage_account.main.name
-      share_name = var.app_name
-      access_key = azurerm_storage_account.main.primary_access_key
-      mount_path = "/var/lib/grafana"
   }
 
   app_settings = {

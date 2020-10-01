@@ -1,11 +1,11 @@
 #! /bin/bash
 
 # Initial Setup
+random_code=$(date +%s | sha256sum | base64 | head -c 4 ;)
 resource_group_name="grafana-eus-rg"
 location="eastus"
-storage_account_name="grafanaeusst"
 app_plan_name="grafana-eus-ap"
-app_service_name="grafana-eus-as"
+app_service_name="grafana${random_code}-eus-as"
 
 # Generating a Grafana password
 gf_password=$(date +%s | sha256sum | base64 | head -c 12 ;)
@@ -18,28 +18,6 @@ az group create \
     --name $resource_group_name \
     --location $location \
     --output none
-
-# Create Storage Account
-az storage account create \
-    --name $storage_account_name \
-    --resource-group $resource_group_name \
-    --location $location \
-    --sku Standard_LRS \
-    --kind StorageV2 \
-    --https-only true \
-    --output none
-
-# Get Storage Account Key
-storage_account_key=$(az storage account keys list \
-    --account-name $storage_account_name \
-    --resource-group $resource_group_name \
-    --query '[0].value' \
-    --output tsv)
-
-# Create Grafana Container
-az storage container create \
-    --name grafana \
-    --account-name $storage_account_name
 
 # Create App Service Plan
 az appservice plan create \
@@ -55,18 +33,6 @@ az webapp create \
     --plan $app_plan_name \
     --name $app_service_name \
     --deployment-container-image-name grafana/grafana \
-    --output none
-
-# Set the storage account and mount point
-az webapp config storage-account add \
-    --resource-group $resource_group_name \
-    --name $app_service_name \
-    --custom-id GrafanaData \
-    --storage-type AzureBlob \
-    --share-name grafana \
-    --account-name $storage_account_name \
-    --access-key $storage_account_key \
-    --mount-path /var/lib/grafana/ \
     --output none
 
 # Get the hostname

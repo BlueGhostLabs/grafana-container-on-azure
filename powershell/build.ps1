@@ -1,11 +1,11 @@
 #! /bin/env pwsh
 
 # Initial Setup
+$randomCode = [guid]::NewGuid().ToString().SubString(0,4)
 $resourceGroupName = "grafana-eus-rg"
 $location = "East US"
-$storageAccountName = "grafanaeusst"
 $appPlanName = "grafana-eus-ap"
-$appServiceName = "grafana-eus-as"
+$appServiceName = "grafana$($randomCode)-eus-as"
 
 # Generating a Grafana and AD App password
 $grafanaPassword = -join ((65..90) + (97..122) | Get-Random -Count 12 | % { [char]$_ })
@@ -16,30 +16,6 @@ $tenantId = (Get-AzTenant).Id
 
 # Create Resource Group
 New-AzResourceGroup -Name $resourceGroupName -Location $location
-
-# Create Storage Account
-$StorageAccountParams = @{
-    ResourceGroupName      = $resourceGroupName
-    Name                   = $storageAccountName
-    Location               = $location
-    SkuName                = "Standard_LRS"
-    kind                   = 'StorageV2'
-    EnableHTTPSTrafficOnly = $true
-}
-
-New-AzStorageAccount @StorageAccountParams
-
-# Get Storage Account Key
-$AccountKeyParams = @{
-    ResourceGroupName = $resourceGroupName
-    Name              = $storageAccountName
-}
-
-$storageAccountKey = (Get-AzStorageAccountKey @AccountKeyParams).Value[0]
-
-# Create Grafana Container
-$storageContext = New-AzStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageAccountKey
-New-AzStorageContainer -Name grafana -Context $storageContext
 
 # Create App Service Plan
 $AppPlanParams = @{
@@ -62,18 +38,6 @@ $AppServiceParams = @{
 }
 
 $webApp = New-AzWebApp @AppServiceParams
-
-# Set the storage account and mount point
-$StoragePathParams = @{
-    Name        = "GrafanaData"
-    AccountName = $storageAccountName
-    Type        = "AzureBlob"
-    ShareName   = "grafana"
-    AccessKey   = $storageAccountKey
-    MountPath   = "/var/lib/grafana/"
-}
-
-$storagePath = New-AzWebAppAzureStoragePath @StoragePathParams
 
 # App Registration
 # https://grafana.com/docs/auth/generic-oauth/#set-up-oauth2-with-azure-active-directory
@@ -107,7 +71,6 @@ $AppConfig = @{
     ResourceGroup      = $resourceGroupName
     Name               = $appServiceName
     AppSettings        = $settings
-    AzureStoragePath   = $storagePath
     ContainerImageName = "grafana/grafana"
 }
 
