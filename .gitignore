@@ -6,6 +6,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+.idea
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -219,5 +220,7 @@ _Pvt_Extensions
 
 # Terraform
 .terraform
+terraform.tfstate
+terraform.tfstate.backup
 tf_log.txt
 terraform

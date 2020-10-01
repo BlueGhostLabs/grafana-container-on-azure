@@ -1,7 +1,12 @@
 # Grafana Container on Azure
 
-This repo is a set of scripts that walks you through configuring and running the Grafan container on an Azure App Service for Linux, using Azure Blog storage as the mounted filesystem to store your plugins and database if using SQLite.
+This repo is a set of scripts that walks you through configuring and running the Grafana container on an Azure App Service for Linux, using the storage in the container to store your plugins and database if using SQLite.
 
+**Note: Microsoft changed Azure Blob storage to readonly and Azure Files doesn't support the SQLite database as it is created due to the journaling used. You can find out more in this [post](https://www.phillipsj.net/posts/update-easy-grafana-on-azure/).**
+
+## Tags
+
+I am using tags to delineate the difference between big changes. Please check the latest tags to know which version you are using.
 ## Bash
 
 You will find a *build.sh* in the Bash folder that can be used to create the resources using the Azure CLI and when you are finished there a *cleanup.sh* provided to remove them all. Both scripts will require parameters to be set at the top of each file, everything else is computed along the way.
